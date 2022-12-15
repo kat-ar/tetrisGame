@@ -30,7 +30,7 @@ top_left_x = (s_width - play_width) // 2
 top_left_y = s_height - play_height
 
 
-# SHAPE FORMATS
+# POSSIBLE SHAPE FORMATS
 
 S = [['.....',
       '......',
@@ -138,7 +138,7 @@ shapes = [S, Z, I, O, J, L, T]
 shape_colors = [(0, 255, 0), (255, 0, 0), (0, 255, 255), (255, 255, 0), (255, 165, 0), (0, 0, 255), (128, 0, 128)]
 # index 0 - 6 represent shape
 
-# Main data structure for our game
+# Main data structure for our game - tetris puzzle piece
 class Piece(object):
     def __init__(self, x, y, shape):
         self.x = x
@@ -148,6 +148,9 @@ class Piece(object):
         self.color = shape_colors[shapes.index(shape)]
         self.rotation = 0
 
+'''
+Creates a grid of size 10 blocks wide, 20 blocks high.
+'''
 def create_grid(locked_positions={}):
     grid = [[(0,0,0) for x in range(10)] for x in range(20)] # blank grid, list comprehesion method
     for i in range(len(grid)):
@@ -171,7 +174,10 @@ def convert_shape_format(shape):
         positions[i] = (pos[0]-2, pos[1] - 4)
 
     return positions
-
+'''
+Checks if piece we are moving moves in a space that is available - not occupied
+by other puzzle pieces nor not allowed (out of grid)
+'''
 def valid_space(shape, grid):
     accepted_pos = [[(j,i) for j in range(10) if grid[i][j] == (0,0,0)] for i in range(20)]
     # magic to flatten the list (make one-dimensional out of two-dimensional):
@@ -184,24 +190,31 @@ def valid_space(shape, grid):
             if pos[1] > -1:
                 return False
     return True
-
+'''
+Checks if the game is lost - if we hit top of the grid by current piece
+'''
 def check_lost(positions):
-    # if the game is lost
     for pos in positions:
         x, y = pos
         if y < 1:
             return True
     return False
-
+'''
+Randomly chooses next puzzle piece to be displayed
+'''
 def get_shape():
     return Piece(5, 0, random.choice(shapes))
-
+'''
+Draws text right in the middle of the window, on top of whatever is there
+'''
 def draw_text_middle(surface, text, size, color):
     font = pygame.font.SysFont('courier', size, bold = True)
     label = font.render(text, 1, color)
 
     surface.blit(label,(top_left_x + play_width /2 - (label.get_width()/2), top_left_y + play_height/2 - (label.get_height()/2)))
-   
+'''
+Draws grid lines
+'''
 def draw_grid(surface, grid):
     sx = top_left_x
     sy = top_left_y
@@ -210,15 +223,16 @@ def draw_grid(surface, grid):
         pygame.draw.line(surface, (128,128,128), (sx, sy + i*block_size), (sx + play_width, sy + i*block_size))
         for j in range(len(grid[i])):
             pygame.draw.line(surface, (128,128,128), (sx + j*block_size, sy), (sx + j*block_size, sy + play_height))
-
-
-
-
+'''
+Checks if a row is full (fully coloured by colours other than black).
+Clears that row or rows.
+Shifts all of the above rows by adequate numer of rows down.
+'''
 def clear_rows(grid, locked):
-    inc = 0 # increment
+    inc = 0 # increment - how many rows do we clear in an instance
     for i in range(len(grid)-1, -1, -1):
         row = grid[i]
-        if (0,0,0) not in row:
+        if (0,0,0) not in row: # if in a given row none of the squares are black
             inc += 1
             ind = i
             for j in range(len(row)):
@@ -233,8 +247,9 @@ def clear_rows(grid, locked):
                 newkey = (x, y+inc)
                 locked[newkey] = locked.pop(key)
     return inc
-
-
+'''
+Displays next shape that will be in the game
+'''
 def draw_next_shape(shape, surface):
     font = pygame.font.SysFont('courier', 30)
     label = font.render('Next shape:', 1, (255,255,255))
@@ -248,7 +263,9 @@ def draw_next_shape(shape, surface):
             if col == '0':
                 pygame.draw.rect(surface, shape.color, (sx + j*block_size, sy + i*block_size, block_size, block_size), 0)
             surface.blit(label, (sx + 10, sy -30))
-
+'''
+Main window display
+'''
 def draw_window(surface, grid, score = 0, last_score = 0):
     surface.fill((0,0,0))
     pygame.font.init()
@@ -278,7 +295,9 @@ def draw_window(surface, grid, score = 0, last_score = 0):
     pygame.draw.rect(surface, (255,0,0), (top_left_x, top_left_y, play_width, play_height), 4)
 
     draw_grid(surface, grid)
-
+'''
+Writes new high score in a text file
+'''
 def update_score(nscore):
     score = get_max_score()
     with open('scores.txt', 'w') as file:
@@ -286,13 +305,17 @@ def update_score(nscore):
             file.write(str(nscore))
         else:
             file.write(str(score))
-
+'''
+Reads current high score from a text file
+'''
 def get_max_score():
     with open('scores.txt', 'r') as file:
         lines = file.readlines()
         score = lines[0].strip()
     return score
-
+'''
+Main window functionalities
+'''
 def main(win):
     last_score = get_max_score()
 
@@ -378,9 +401,11 @@ def main(win):
             pygame.time.delay(1500)
             run = False
             update_score(score)
-    
-
-
+'''
+Main menu - lets the player rest between the games. 
+Player must hit any keyboard key in order to start playing.
+Main menu shows as first game window and every time we loose the game. 
+'''
 def main_menu(win):
     run = True
     while run:
@@ -397,4 +422,4 @@ def main_menu(win):
 
 win = pygame.display.set_mode((s_width, s_height))
 pygame.display.set_caption('Tetris')
-main_menu(win)  # start game
+main_menu(win)
